@@ -39,6 +39,10 @@ exit_val=0
 
 for package in $cleaned_paths
 do
+		if [ "$package" ==  "setup" ]
+		then
+				continue
+		fi
 		found_package=0
 		for line in $coverage_report
 		do
