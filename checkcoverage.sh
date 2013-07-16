@@ -52,6 +52,15 @@ do
 					found_package=1
 					break
 			fi
+			# replace slashes with periods, in case coverage is using
+			# package representation instead of directory representation
+			# in its output
+			echo $line | sed "s'/'.'g" | grep "^$package" > /dev/null 2>&1
+			if [ $? -eq 0 ]
+			then
+					found_package=1
+					break
+			fi
 		done
 		if [ $found_package -eq 0 ]
 		then
