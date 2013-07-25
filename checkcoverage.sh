@@ -1,8 +1,7 @@
 #!/bin/bash
 
 
-python_files=$(find . -name "*.py")
-
+python_files=$(find . -name "*.py" -not -path "./legacy/*")
 
 function remove_test_files {
 	files=$@
