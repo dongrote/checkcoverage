@@ -32,7 +32,7 @@ function clean_pathnames {
 
 filtered_files=$(remove_test_files $python_files)
 cleaned_paths=$(clean_pathnames $filtered_files)
-coverage_report=$(coverage report)
+coverage_report=$(coverage report --omit="/usr*","legacy/*")
 
 exit_val=0
 
