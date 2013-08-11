@@ -2,6 +2,7 @@
 import subprocess
 import sys
 import os
+from optparse import OptionParser
 
 
 def test_file_filter(filepath):
@@ -43,33 +44,35 @@ def build_coverage_dictionary(report):
 
 
 def main():
-    minimum_code_coverage = None
-    if len(sys.argv) > 1:
-        try:
-            minimum_code_coverage = int(sys.argv[1])
-        except:
-            print >>sys.stderr, 'Minimum code coverage must be an integer.'
-            return -1
+    parser = OptionParser()
+    parser.set_usage('Usage: %prog [options]')
+    parser.add_option('-m', '--minimum-code-coverage',
+        dest='minimum_code_coverage', default=0, type='int',
+        help='The per-file minimum code coverage')
+
+    (options, args) = parser.parse_args()
+
     coverage_report = get_coverage_report()
     coverage_dictionary = build_coverage_dictionary(coverage_report)
+
     file_list = get_python_files()
     file_list = filter(test_file_filter, file_list)
     file_list = filter(legacy_scraper_filter, file_list)
     file_list = filter(other_filter, file_list)
+
     for filepath in file_list:
         # we gonna chop off the './' and the '.py' at the beginning and end
         key = filepath[2:-3]
         try:
             line = coverage_dictionary[key]
-            if minimum_code_coverage is not None:
-                tokens = line.split()
-                coverage = tokens[-1]
-                coverage = int(coverage[:-1])
-                if coverage < minimum_code_coverage:
-                    print >> sys.stderr,\
-                    'Minimum code coverage (%d%% < %d%%) not met for "%s"!' %\
-                            (coverage, minimum_code_coverage, filepath)
-                    return 1
+            tokens = line.split()
+            coverage = tokens[-1]
+            coverage = int(coverage[:-1])
+            if coverage < options.minimum_code_coverage:
+                print >> sys.stderr,\
+                'Minimum code coverage not met (%d%% < %d%%) for "%s"!' %\
+                    (coverage, options.minimum_code_coverage, filepath)
+                return 1
         except KeyError:
             print >> sys.stderr, '"%s" not found in coverage report!' % filepath
             return 1
