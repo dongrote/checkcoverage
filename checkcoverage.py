@@ -10,7 +10,7 @@ def test_file_filter(filepath):
     return not basename.startswith('test_')
 
 def legacy_scraper_filter(filepath):
-    return not filepath.startswith('./legacy/')
+    return not filepath.startswith('./centrifuge/legacy/')
 
 def other_filter(filepath):
     blacklist = ['./setup.py']
@@ -29,7 +29,7 @@ def get_python_files(start='.'):
 
 def get_coverage_report():
     report = subprocess.check_output(
-        ['coverage','report','--omit="/usr*","legacy/*"'])
+        ['coverage','report','--omit="/usr*","centrifuge/legacy/*"'])
     return report
 
 def build_coverage_dictionary(report):
