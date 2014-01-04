@@ -2,7 +2,8 @@
 import subprocess
 import sys
 import os
-from optparse import OptionParser
+import re
+from argparse import ArgumentParser
 
 
 def test_file_filter(filepath):
@@ -29,7 +30,7 @@ def get_python_files(start='.'):
 
 def get_coverage_report():
     report = subprocess.check_output(
-        ['coverage','report','--omit="/usr*","centrifuge/legacy/*"'])
+        ['coverage','report'])
     return report
 
 def build_coverage_dictionary(report):
@@ -42,23 +43,44 @@ def build_coverage_dictionary(report):
         dictionary[key] = line
     return dictionary
 
+def match_exclude_regex(regex, path):
+    return not re.match(regex, path) is None
+
 
 def main():
-    parser = OptionParser()
-    parser.set_usage('Usage: %prog [options]')
-    parser.add_option('-m', '--minimum-code-coverage',
-        dest='minimum_code_coverage', default=0, type='int',
+    parser = ArgumentParser(
+        description='Check code coverage in a Python source tree.')
+    parser.add_argument('-m', '--minimum-code-coverage', dest='minimum_code_coverage', default=0, type=int,
         help='The per-file minimum code coverage')
+    parser.add_argument('-x', '--exclude', dest='exclude', nargs='+', type=str, default=[],
+        help='File path regular expression(s) to exclude.')
+    parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', default=False,
+        help='Verbose output')
 
-    (options, args) = parser.parse_args()
+    args = parser.parse_args()
 
     coverage_report = get_coverage_report()
     coverage_dictionary = build_coverage_dictionary(coverage_report)
 
     file_list = get_python_files()
-    file_list = filter(test_file_filter, file_list)
-    file_list = filter(legacy_scraper_filter, file_list)
-    file_list = filter(other_filter, file_list)
+    for exclude_regex in args.exclude:
+        # filter coverage_dictionary
+        remove_list = [filepath for filepath in coverage_dictionary if match_exclude_regex(exclude_regex, filepath)]
+        for entry in remove_list:
+            del coverage_dictionary[entry]
+        # filter file_list
+        file_list = [filepath for filepath in file_list if not match_exclude_regex(exclude_regex, filepath)]
+
+    if args.verbose:
+        for line in coverage_report.splitlines():
+            output = True
+            for exclude_regex in args.exclude:
+                if match_exclude_regex(exclude_regex, line.split()[0]):
+                    output = False
+                    break
+            if output:
+                print line
+        print
 
     for filepath in file_list:
         # we gonna chop off the './' and the '.py' at the beginning and end
@@ -66,12 +88,12 @@ def main():
         try:
             line = coverage_dictionary[key]
             tokens = line.split()
-            coverage = tokens[-1]
-            coverage = int(coverage[:-1])
-            if coverage < options.minimum_code_coverage:
+            coverage = tokens[-1]  # grab the code coverage
+            coverage = int(coverage[:-1])  # remove the '%' character
+            if coverage < args.minimum_code_coverage:
                 print >> sys.stderr,\
                 'Minimum code coverage not met (%d%% < %d%%) for "%s"!' %\
-                    (coverage, options.minimum_code_coverage, filepath)
+                    (coverage, args.minimum_code_coverage, filepath)
                 return 1
         except KeyError:
             print >> sys.stderr, '"%s" not found in coverage report!' % filepath
