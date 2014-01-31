@@ -10,9 +10,6 @@ def test_file_filter(filepath):
     basename = os.path.basename(filepath)
     return not basename.startswith('test_')
 
-def legacy_scraper_filter(filepath):
-    return not filepath.startswith('./centrifuge/legacy/')
-
 def other_filter(filepath):
     blacklist = ['./setup.py']
     for i in blacklist:
