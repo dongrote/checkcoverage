@@ -37,7 +37,7 @@ def build_coverage_dictionary(report):
             key, garbage = line.split(' ', 1)
         except:
             continue
-        dictionary[key[-3] if key.endswith('.py') else key] = line
+        dictionary[key[:-3] if key.endswith('.py') else key] = line
     return dictionary
 
 def match_exclude_regex(regex, path):
